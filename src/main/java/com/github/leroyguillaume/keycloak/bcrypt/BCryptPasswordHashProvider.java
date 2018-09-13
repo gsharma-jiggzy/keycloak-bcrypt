@@ -7,7 +7,7 @@ import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.hash.PasswordHashProvider;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.UserCredentialModel;
-import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt;
 
 import java.io.IOException;
 
@@ -54,9 +54,10 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
         credential.setValue(password);
         try {
             // Encode String to base 64
-            String saltEncode = Base64.getEncoder().encodeToString(salt.getBytes());
-            byte[] saltDecode = Base64.getDecoder().decode(saltEncode);
-            credential.setSalt(saltDecode);
+            // String saltEncode = Base64.getEncoder().encodeToString(salt.getBytes());
+            // byte[] saltDecode = Base64.getDecoder().decode(saltEncode);
+            // credential.setSalt(saltDecode);
+            credential.setSalt(Base64.decode(salt));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
