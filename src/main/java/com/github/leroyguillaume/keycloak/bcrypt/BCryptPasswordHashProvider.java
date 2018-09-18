@@ -7,7 +7,9 @@ import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.hash.PasswordHashProvider;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.UserCredentialModel;
-import org.springframework.security.crypto.bcrypt;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 
 import java.io.IOException;
 
@@ -17,10 +19,12 @@ import java.io.IOException;
 public class BCryptPasswordHashProvider implements PasswordHashProvider {
     private final int defaultIterations;
     private final String providerId;
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public BCryptPasswordHashProvider(String providerId, int defaultIterations) {
         this.providerId = providerId;
         this.defaultIterations = defaultIterations;
+        this.bCryptPasswordEncoder = new BCryptPasswordEncoder(defaultIterations);
     }
 
     @Override
@@ -35,8 +39,8 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
 
     @Override
     public String encode(String rawPassword, int iterations) {
-        String salt = iterations == -1 ? BCrypt.gensalt(defaultIterations) : BCrypt.gensalt(iterations);
-        return BCrypt.hashpw(rawPassword, salt);
+        bCryptPasswordEncoder = new BCryptPasswordEncoder(iterations);
+        return bCryptPasswordEncoder.encode(rawPassword);
     }
 
     @Override
@@ -45,8 +49,9 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
             iterations = defaultIterations;
         }
 
+        bCryptPasswordEncoder = new BCryptPasswordEncoder(iterations);
         String salt = BCrypt.gensalt(iterations);
-        String password = BCrypt.hashpw(rawPassword, salt);
+        String password = bCryptPasswordEncoder.encode(rawPassword);
 
         credential.setAlgorithm(providerId);
         credential.setType(UserCredentialModel.PASSWORD);
@@ -54,10 +59,10 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
         credential.setValue(password);
         try {
             // Encode String to base 64
-            // String saltEncode = Base64.getEncoder().encodeToString(salt.getBytes());
-            // byte[] saltDecode = Base64.getDecoder().decode(saltEncode);
-            // credential.setSalt(saltDecode);
-            credential.setSalt(Base64.decode(salt));
+            String saltEncode = Base64.getEncoder().encodeToString(salt.getBytes());
+            byte[] saltDecode = Base64.getDecoder().decode(saltEncode);
+            credential.setSalt(saltDecode);
+            // credential.setSalt(Base64.getDecoder().decode(salt));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -65,11 +70,15 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
 
     @Override
     public void close() {
-
     }
 
     @Override
     public boolean verify(String rawPassword, CredentialModel credential) {
-        return BCrypt.checkpw(rawPassword, credential.getValue());
+        System.out.println( "CHECK PASSWORD");
+        System.out.println( rawPassword);
+        System.out.println( credential);
+        System.out.println( credential.getValue());
+        System.out.println( bCryptPasswordEncoder.matches(rawPassword, credential.getValue()));
+        return bCryptPasswordEncoder.matches(rawPassword, credential.getValue());
     }
 }

@@ -1,7 +1,8 @@
 <jboss-deployment-structure xmlns="urn:jboss:deployment-structure:1.0">
     <deployment>
         <dependencies>
-            <module name="org.mindrot.jbcrypt" />
+            <module name="org.apache.commons.logging" />
+            <module name="org.springframework.security.crypto" />
         </dependencies>
     </deployment>
 </jboss-deployment-structure>
