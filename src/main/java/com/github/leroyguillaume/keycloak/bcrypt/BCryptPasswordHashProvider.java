@@ -10,6 +10,8 @@ import org.keycloak.models.UserCredentialModel;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.util.regex.Pattern;
+
 
 import java.io.IOException;
 
@@ -20,6 +22,9 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
     private final int defaultIterations;
     private final String providerId;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    private Pattern BCRYPT_PATTERN = Pattern
+            .compile("\\A\\$2a?\\$\\d\\d\\$[./0-9A-Za-z]{53}");
 
     public BCryptPasswordHashProvider(String providerId, int defaultIterations) {
         this.providerId = providerId;
@@ -39,8 +44,13 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
 
     @Override
     public String encode(String rawPassword, int iterations) {
-        bCryptPasswordEncoder = new BCryptPasswordEncoder(iterations);
-        return bCryptPasswordEncoder.encode(rawPassword);
+        if (isHashed(rawPassword)) {
+            return rawPassword;
+        }
+        else {
+            bCryptPasswordEncoder = new BCryptPasswordEncoder(iterations);
+            return bCryptPasswordEncoder.encode(rawPassword);
+        }
     }
 
     @Override
@@ -48,10 +58,15 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
         if (iterations == -1) {
             iterations = defaultIterations;
         }
-
         bCryptPasswordEncoder = new BCryptPasswordEncoder(iterations);
         String salt = BCrypt.gensalt(iterations);
-        String password = bCryptPasswordEncoder.encode(rawPassword);
+        String password;
+        if (isHashed(rawPassword)) {
+            password = rawPassword;
+        }
+        else {
+            password = bCryptPasswordEncoder.encode(rawPassword);
+        }
 
         credential.setAlgorithm(providerId);
         credential.setType(UserCredentialModel.PASSWORD);
@@ -68,17 +83,16 @@ public class BCryptPasswordHashProvider implements PasswordHashProvider {
         }
     }
 
+    private boolean isHashed(String rawPassword) {
+        return BCRYPT_PATTERN.matcher(rawPassword).matches();
+    }
+
     @Override
     public void close() {
     }
 
     @Override
     public boolean verify(String rawPassword, CredentialModel credential) {
-        System.out.println( "CHECK PASSWORD");
-        System.out.println( rawPassword);
-        System.out.println( credential);
-        System.out.println( credential.getValue());
-        System.out.println( bCryptPasswordEncoder.matches(rawPassword, credential.getValue()));
         return bCryptPasswordEncoder.matches(rawPassword, credential.getValue());
     }
 }
