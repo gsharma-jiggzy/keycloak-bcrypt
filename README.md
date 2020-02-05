@@ -17,3 +17,5 @@ KEYCLOAK_HOME/bin/jboss-cli.sh \
 cp target/*.jar KEYCLOAK_HOME/standalone/deployments
 ```
 You need to restart Keycloak.
+
+Docker is a bit different
